@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # 1. PATH SETUP & OUTPUT DIRECTORIES
 # ---------------------------------------------------------
 # Add the root yolov5_adversarial folder to sys.path so we can load local modules
-ROOT = Path('/content/drive/MyDrive/Research/test_adv/yolov5_adversarial')
+ROOT = Path(r'E:\Object_Detection_Models\yolov5_adversarial')
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 
@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Define where to save outputs dynamically based on the timestamp
-OUTPUT_DIR = Path('/content/drive/MyDrive/Research/test_adv/yolov5_adversarial/behavioral_auditor/outputs')
+OUTPUT_DIR = ROOT / 'behavioral_auditor' / 'outputs'
 RUN_DIR = OUTPUT_DIR / timestamp
 
 WEIGHTS_DIR = RUN_DIR / 'saved_model'
@@ -35,8 +35,8 @@ os.makedirs(PATCHED_HEATMAP_DIR, exist_ok=True)
 print(f"Creating output directories under: {RUN_DIR}")
 
 # Define your data paths 
-CLEAN_DATA_DIR = '/content/drive/MyDrive/Research/test_adv/yolov5_adversarial/runs/test_adversarial/20260329-100705_bdd_patch_car_2/clean/images'
-PATCHED_DATA_DIR = '/content/drive/MyDrive/Research/test_adv/yolov5_adversarial/runs/test_adversarial/20260329-100705_bdd_patch_car_2/proper_patched/images'
+CLEAN_DATA_DIR = ROOT /'runs' / 'test_adversarial' / '20260426-165555_base' / 'clean' / 'images'
+PATCHED_DATA_DIR = ROOT / 'runs' / 'test_adversarial' / '20260426-165555_base' / 'proper_patched' / 'images'
 
 # ---------------------------------------------------------
 # 2. YOLOv5 HOOKS & MODEL LOADING
@@ -49,8 +49,13 @@ def get_features(name):
     return hook
 
 print("Loading local YOLOv5 model...")
-model_path = '/content/drive/MyDrive/Research/test_adv/yolov5_adversarial/runs/train/s_coco_e300_4Class_Vehicle/weights/best.pt' 
+model_path = ROOT / 'runs' / 'train' / 's_coco_e300_4Class_Vehicle' / 'weights' / 'best.pt'
 yolo = torch.hub.load(str(ROOT), 'custom', path=str(model_path), source='local')
+
+# Use CPU only
+DEVICE = torch.device('cpu')
+
+yolo.to(DEVICE)
 
 sequential_layers = None
 for m in yolo.modules():
@@ -118,7 +123,7 @@ class MultiScaleAuditor(nn.Module):
         # Predict Layer 5
         return self.regressor(fused)
 
-auditor = MultiScaleAuditor().cuda()
+auditor = MultiScaleAuditor().to(DEVICE)
 optimizer = torch.optim.Adam(auditor.parameters(), lr=0.001)
 criterion = nn.MSELoss()
 
@@ -134,7 +139,7 @@ def load_images_from_folder(folder_path):
     images = []
     for img_path in glob.glob(os.path.join(str(folder_path), '*.jpg')):
         img = Image.open(img_path).convert('RGB')
-        images.append((img_path, transform(img).unsqueeze(0).cuda()))
+        images.append((img_path, transform(img).unsqueeze(0).to(DEVICE)))
     return images
 
 # ---------------------------------------------------------

@@ -192,15 +192,15 @@ class PatchTester:
         self,
         conf_thresh: float = 0.4,
         nms_thresh: float = 0.4,
-        save_txt: bool = False,
-        save_image: bool = False,
+        save_txt: bool = True,
+        save_image: bool = True,
         save_orig_padded_image: bool = True,
         draw_bbox_on_image: bool = True,
         class_agnostic: bool = False,
         cls_id: Optional[int] = None,
         min_pixel_area: Optional[int] = None,
-        save_plots: bool = False,
-        save_video: bool = False,
+        save_plots: bool = True,
+        save_video: bool = True,
         max_images: int = 100000,
     ) -> dict:
         """
@@ -259,7 +259,7 @@ class PatchTester:
             json.dump(self.cfg, f_json, ensure_ascii=False, indent=4)
 
         # save patch to self.cfg.savedir
-        patch_save_path = osp.join(self.cfg.savedir, self.cfg.patchfile.split("/")[-1])
+        patch_save_path = osp.join(self.cfg.savedir, Path(self.cfg.patchfile).name)
         transforms.ToPILImage(self.cfg.patch_img_mode)(adv_patch_cpu).save(patch_save_path)
 
         img_paths = glob.glob(osp.join(self.cfg.imgdir, "*"))
@@ -292,7 +292,7 @@ class PatchTester:
         transforms_topil = transforms.ToPILImage("RGB")
         zeros_tensor = torch.zeros([1, 5]).to(self.dev)
         for imgfile in tqdm.tqdm(img_paths):
-            img_name = osp.splitext(imgfile)[0].split("/")[-1]
+            img_name = Path(imgfile).stem
             imgfile_path = Path(imgfile)
             image_id = int(imgfile_path.stem) if imgfile_path.stem.isnumeric() else imgfile_path.stem
 
@@ -652,8 +652,8 @@ def main():
         "--patchfile",
         type=str,
         dest="patchfile",
-        default=None,
-        required=True,
+        default= 'E:/Object_Detection_Models/yolov5_adversarial/adv_patch_gen/media/custom_p.png',
+        required=False,
         help="Path to patch image file for testing (default: %(default)s)",
     )
     parser.add_argument(
@@ -661,8 +661,8 @@ def main():
         "--imgdir",
         type=str,
         dest="imgdir",
-        default=None,
-        required=True,
+        default='E:/Object_Detection_Models/yolov5_adversarial/data/bdd_subset/test/images',
+        required=False,
         help="Path to img dir for testing (default: %(default)s)",
     )
     parser.add_argument(
